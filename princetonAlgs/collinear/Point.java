@@ -64,16 +64,10 @@ public class Point implements Comparable<Point> {
         /**
          * this.x = x0, this.y = y0, that.x = x1, that.y = y1
          */
-        if (this.y == that.y) {
-            return 0.0;
-        }
-        if (this.x == that.x) {
-            return Double.POSITIVE_INFINITY;
-        }
-        if (this.x == that.x && this.y == that.y) {
-            return Double.NEGATIVE_INFINITY;
-        }
-        return (double) (that.y - this.y) / (that.x - this.x);
+        if (x == that.x && y == that.y) return Double.NEGATIVE_INFINITY;
+        if (x == that.x) return Double.POSITIVE_INFINITY;
+        if (y == that.y) return +0.0;
+        return (double) (that.y - y) / (that.x - x);
     }
 
     /**
@@ -124,7 +118,7 @@ public class Point implements Comparable<Point> {
 
     /**
      * Returns a string representation of this point.
-     * This method is provide for debugging;
+     * This method is provided for debugging;
      * your program should not rely on the format of the string representation.
      *
      * @return a string representation of this point
