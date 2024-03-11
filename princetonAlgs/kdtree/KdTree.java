@@ -81,9 +81,32 @@ public class KdTree {
     }
 
     // does the set contain point p?
-    // public boolean contains(Point2D p) {
-    //
-    // }
+    public boolean contains(Point2D p) {
+        if (p == null) throw new IllegalArgumentException("null value");
+        return contains(root, p, vertical);
+    }
+
+    private boolean contains(Node head, Point2D p, boolean split) {
+        if (head == null) return false;
+        if (head.point == p) return true;
+        if (split == true) {
+            if (cmp(head, p, split) < 0) {
+                contains(head.leftBranch, p, !split);
+            }
+            else if (cmp(head, p, split) >= 0) {
+                contains(head.rightBranch, p, !split);
+            }
+        }
+        if (split == false) {
+            if (cmp(head, p, split) < 0) {
+                contains(head.leftBranch, p, !split);
+            }
+            else if (cmp(head, p, split) >= 0) {
+                contains(head.rightBranch, p, !split);
+            }
+        }
+        return false;
+    }
 
     // draw all points to standard draw
     // public void draw() {
@@ -136,6 +159,11 @@ public class KdTree {
         for (Point2D p : points) {
             kdtree.insert(p);
         }
+        System.out.println(points);
+        Point2D checkTrue = points.dequeue();
+        Point2D checkFalse = new Point2D(0.23, 0.33);
+        System.out.println(kdtree.contains(checkTrue));
+        System.out.println(kdtree.contains(checkFalse));
 
     }
 }
