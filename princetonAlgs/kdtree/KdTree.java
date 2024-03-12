@@ -1,18 +1,18 @@
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.Queue;
 import edu.princeton.cs.algs4.RectHV;
+import edu.princeton.cs.algs4.StdDraw;
 
 public class KdTree {
 
 
+    private static final double XMIN = 0.0;
+    private static final double XMAX = 1.0;
+    private static final double YMIN = 0.0;
+    private static final double YMAX = 1.0;
     private boolean vertical = true;
-    private boolean horizontal = !vertical;
     private Node root;
     private int size;
-    private static double XMIN = 0.0;
-    private static double XMAX = 1.0;
-    private static double YMIN = 0.0;
-    private static double YMAX = 1.0;
 
 
     private class Node {
@@ -144,7 +144,36 @@ public class KdTree {
     public void draw() {
 
 
+        draw(root);
     }
+
+    private void draw(Node n) {
+
+        if (n != null) {
+            Point2D p = n.point;
+            boolean split = n.split;
+            double xmin = n.rect.xmin();
+            double xmax = n.rect.xmax();
+            double ymin = n.rect.ymin();
+            double ymax = n.rect.ymax();
+            StdDraw.setPenRadius(0.007);
+
+            if (split == true) {
+                StdDraw.setPenColor(StdDraw.RED);
+                StdDraw.line(p.x(), ymin, p.x(), ymax);
+            }
+            if (split == false) {
+                StdDraw.setPenColor(StdDraw.BLUE);
+                StdDraw.line(xmin, p.y(), xmax, p.y());
+            }
+            StdDraw.setPenRadius(0.02);
+            StdDraw.setPenColor(StdDraw.BLACK);
+            StdDraw.point(p.x(), p.y());
+            draw(n.leftBranch);
+            draw(n.rightBranch);
+        }
+    }
+
 
     // all points that are inside the rectangle (or on the boundary)
     // public Iterable<Point2D> range(RectHV rect) {
@@ -213,6 +242,7 @@ public class KdTree {
         KdTree kdtree = new KdTree();
         for (Point2D p : point2DQueue) {
             kdtree.insert(p);
+            kdtree.draw();
         }
 
 
