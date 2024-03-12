@@ -1,6 +1,7 @@
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.Queue;
 import edu.princeton.cs.algs4.RectHV;
+import edu.princeton.cs.algs4.Stack;
 import edu.princeton.cs.algs4.StdDraw;
 
 public class KdTree {
@@ -176,9 +177,25 @@ public class KdTree {
 
 
     // all points that are inside the rectangle (or on the boundary)
-    // public Iterable<Point2D> range(RectHV rect) {
-    //
-    // }
+    public Iterable<Point2D> range(RectHV rect) {
+        Stack<Point2D> pointsInRange = new Stack<>();
+        range(rect, root, pointsInRange);
+        return pointsInRange;
+    }
+
+    private void range(RectHV rect, Node node, Stack<Point2D> points) {
+        if (node == null) return;
+
+        if (node.rect.intersects(rect)) {
+            if (rect.contains(node.point)) {
+                points.push(node.point);
+            }
+            range(rect, node.leftBranch, points);
+            range(rect, node.rightBranch, points);
+        }
+
+
+    }
 
     // a nearest neighbor in the set to point p; null if the set is empty
     // public Point2D nearest(Point2D p) {
@@ -216,7 +233,7 @@ public class KdTree {
         //
         //     points.enqueue(new Point2D(x, y));
         // }
-        // KdTree kdtree = new KdTree();
+        // KdTre===e kdtree = new KdTree();
         // for (Point2D p : points) {
         //     kdtree.insert(p);
         // }
@@ -242,10 +259,8 @@ public class KdTree {
         KdTree kdtree = new KdTree();
         for (Point2D p : point2DQueue) {
             kdtree.insert(p);
-            kdtree.draw();
+            // kdtree.draw();
         }
-
-
     }
 }
 
