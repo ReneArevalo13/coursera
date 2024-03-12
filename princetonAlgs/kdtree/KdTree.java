@@ -1,6 +1,6 @@
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.Queue;
-import edu.princeton.cs.algs4.StdRandom;
+import edu.princeton.cs.algs4.RectHV;
 
 public class KdTree {
 
@@ -9,6 +9,10 @@ public class KdTree {
     private boolean horizontal = !vertical;
     private Node root;
     private int size;
+    private static double XMIN = 0.0;
+    private static double XMAX = 1.0;
+    private static double YMIN = 0.0;
+    private static double YMAX = 1.0;
 
 
     private class Node {
@@ -16,6 +20,7 @@ public class KdTree {
         private Node leftBranch; // left branch of node
         private Node rightBranch; // right branch of node
         private boolean split; // true: vertical, false: horizontal
+        private RectHV rect; // the axis-aligned rectangle corresponding to this node
 
         public Node(Point2D point) {
             this.point = point;
@@ -52,31 +57,58 @@ public class KdTree {
         if (head == null) {
             Node temp = new Node(p);
             temp.split = split;
+            temp.rect = alignedRect(head, p, split, 0);
             size++;
             return temp;
         }
         // handle both left and right cases depending on previous case;
+        // compare coordiantes
+        int cmpValue = cmp(head, p, split);
 
         // split vertically
         if (split == true) {
-            if (cmp(head, p, split) < 0) {
+            if (cmpValue < 0) {
                 head.leftBranch = insert(head.leftBranch, p, !split);
+                head.leftBranch.rect = alignedRect(head, p, split, cmpValue);
             }
-            else if (cmp(head, p, split) >= 0) {
+            else if (cmpValue >= 0) {
                 head.rightBranch = insert(head.rightBranch, p, !split);
+                head.rightBranch.rect = alignedRect(head, p, split, cmpValue);
             }
         }
         // split horizontally
         if (split == false) {
-            if (cmp(head, p, split) < 0) {
+            if (cmpValue < 0) {
                 head.leftBranch = insert(head.leftBranch, p, !split);
+                head.leftBranch.rect = alignedRect(head, p, split, cmpValue);
             }
-            else if (cmp(head, p, split) >= 0) {
+            else if (cmpValue >= 0) {
                 head.rightBranch = insert(head.rightBranch, p, !split);
+                head.rightBranch.rect = alignedRect(head, p, split, cmpValue);
             }
         }
+
         return head;
 
+
+    }
+
+    private RectHV alignedRect(Node prevNode, Point2D p, boolean split, int cmpValue) {
+        if (prevNode == null) return new RectHV(XMIN, YMIN, XMAX, YMAX);
+
+        double prevXMIN = prevNode.rect.xmin();
+        double prevXMAX = prevNode.rect.xmax();
+        double prevYMIN = prevNode.rect.ymin();
+        double prevYMAX = prevNode.rect.ymax();
+
+        double prevX = prevNode.point.x();
+        double prevY = prevNode.point.y();
+
+        // split vertically
+        if (split == true && cmpValue < 0) return new RectHV(prevXMIN, prevYMIN, prevX, prevYMAX);
+        if (split == true && cmpValue >= 0) return new RectHV(prevX, prevYMIN, prevXMAX, prevYMAX);
+        if (split == false && cmpValue < 0) return new RectHV(prevXMIN, prevYMIN, prevXMAX, prevY);
+        return new RectHV(prevXMIN, prevY, prevXMAX, prevYMAX);
 
     }
 
@@ -109,10 +141,10 @@ public class KdTree {
     }
 
     // draw all points to standard draw
-    // public void draw() {
-    //
-    //
-    // }
+    public void draw() {
+
+
+    }
 
     // all points that are inside the rectangle (or on the boundary)
     // public Iterable<Point2D> range(RectHV rect) {
@@ -148,22 +180,41 @@ public class KdTree {
     // unit testing of the methods (optional)
     public static void main(String[] args) {
 
-        Queue<Point2D> points = new Queue<>();
-        for (int i = 0; i < 5; i++) {
-            double x = StdRandom.uniform(0.0, 1.0);
-            double y = StdRandom.uniform(0.0, 1.0);
+        // Queue<Point2D> points = new Queue<>();
+        // for (int i = 0; i < 5; i++) {
+        //     double x = StdRandom.uniform(0.0, 1.0);
+        //     double y = StdRandom.uniform(0.0, 1.0);
+        //
+        //     points.enqueue(new Point2D(x, y));
+        // }
+        // KdTree kdtree = new KdTree();
+        // for (Point2D p : points) {
+        //     kdtree.insert(p);
+        // }
+        // System.out.println(points);
+        // Point2D checkTrue = points.dequeue();
+        // Point2D checkFalse = new Point2D(0.23, 0.33);
+        // System.out.println(kdtree.contains(checkTrue));
+        // System.out.println(kdtree.contains(checkFalse));
 
-            points.enqueue(new Point2D(x, y));
-        }
+        Queue<Point2D> point2DQueue = new Queue<>();
+        Point2D p0 = new Point2D(0.2, 0.3);
+        point2DQueue.enqueue(p0);
+        Point2D p1 = new Point2D(0.1, 0.5);
+        point2DQueue.enqueue(p1);
+        Point2D p2 = new Point2D(0.4, 0.2);
+        point2DQueue.enqueue(p2);
+        Point2D p3 = new Point2D(0.4, 0.5);
+        point2DQueue.enqueue(p3);
+        Point2D p4 = new Point2D(0.3, 0.3);
+        point2DQueue.enqueue(p4);
+        Point2D p5 = new Point2D(0.4, 0.4);
+        point2DQueue.enqueue(p5);
         KdTree kdtree = new KdTree();
-        for (Point2D p : points) {
+        for (Point2D p : point2DQueue) {
             kdtree.insert(p);
         }
-        System.out.println(points);
-        Point2D checkTrue = points.dequeue();
-        Point2D checkFalse = new Point2D(0.23, 0.33);
-        System.out.println(kdtree.contains(checkTrue));
-        System.out.println(kdtree.contains(checkFalse));
+
 
     }
 }
