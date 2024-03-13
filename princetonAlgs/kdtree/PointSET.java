@@ -70,7 +70,7 @@ public class PointSET {
         Point2D champion = null;
 
         for (Point2D i : points) {
-            double tmp = p.distanceTo(i);
+            double tmp = p.distanceSquaredTo(i);
             if (tmp < distance) {
                 champion = i;
             }

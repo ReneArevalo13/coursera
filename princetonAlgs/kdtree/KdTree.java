@@ -49,13 +49,15 @@ public class KdTree {
         if (p == null) {
             throw new IllegalArgumentException("null point");
         }
-        root = insert(root, p, vertical);
-
+        if (!contains(p)) {
+            root = insert(root, p, vertical);
+        }
     }
 
     private Node insert(Node head, Point2D p, boolean split) {
         // the case of the first insertion, should be split vertically
         if (head == null) {
+
             Node temp = new Node(p);
             temp.split = split;
             temp.rect = alignedRect(head, p, split, 0);
@@ -121,21 +123,25 @@ public class KdTree {
 
     private boolean contains(Node head, Point2D p, boolean split) {
         if (head == null) return false;
-        if (head.point == p) return true;
+
+        if (head.point.equals(p)) return true;
+
+        int cmpValue = cmp(head, p, split);
+
         if (split == true) {
-            if (cmp(head, p, split) < 0) {
-                contains(head.leftBranch, p, !split);
+            if (cmpValue < 0) {
+                return contains(head.leftBranch, p, !split);
             }
-            else if (cmp(head, p, split) >= 0) {
-                contains(head.rightBranch, p, !split);
+            else if (cmpValue >= 0) {
+                return contains(head.rightBranch, p, !split);
             }
         }
         if (split == false) {
-            if (cmp(head, p, split) < 0) {
-                contains(head.leftBranch, p, !split);
+            if (cmpValue < 0) {
+                return contains(head.leftBranch, p, !split);
             }
-            else if (cmp(head, p, split) >= 0) {
-                contains(head.rightBranch, p, !split);
+            else if (cmpValue >= 0) {
+                return contains(head.rightBranch, p, !split);
             }
         }
         return false;
@@ -176,6 +182,8 @@ public class KdTree {
 
     // all points that are inside the rectangle (or on the boundary)
     public Iterable<Point2D> range(RectHV rect) {
+        if (rect == null) throw new IllegalArgumentException();
+
         Stack<Point2D> pointsInRange = new Stack<>();
         range(rect, root, pointsInRange);
         return pointsInRange;
@@ -198,6 +206,7 @@ public class KdTree {
     // a nearest neighbor in the set to point p; null if the set is empty
     public Point2D nearest(Point2D p) {
         if (p == null) throw new IllegalArgumentException("null point");
+        if (isEmpty()) return null;
         Point2D champ = new Point2D(2.0, 2.0);
 
         return nearest(p, root, champ);
@@ -207,10 +216,10 @@ public class KdTree {
     private Point2D nearest(Point2D p, Node head, Point2D champ) {
         if (head == null) return champ;
         Point2D currentPoint = head.point;
-
+        double queryDistance = champ.distanceSquaredTo(p);
         // the distance between query point the node's associated rectangle
         double rectDistance = head.rect.distanceSquaredTo(p);
-        double queryDistance = champ.distanceSquaredTo(p);
+
 
         if (rectDistance < queryDistance) {
 
@@ -253,22 +262,6 @@ public class KdTree {
             }
         }
         return champ;
-            /*
-             pruning rule: if the closest point discovered so far is closer than the distance between
-             the query point and the rectangle corresponding to a node, there is no need to explore
-             that node (or its subtrees). That is, search a node only if it might contain a point
-             that is closer than the best one found so far.
-
-             The effectiveness of the pruning rule depends on quickly finding a nearby point.
-             To do this, organize the recursive method so that when there are two possible subtrees
-             to go down, you always choose the subtree that is on the same side of the splitting
-             line as the query point as the first subtree to explore—the closest point found while
-             exploring the first subtree may enable pruning of the second subtree.
-
-             THIS MEANS THAT RECTDISTANCE < QUERYDISTANCE means we search the node and subtree
-             */
-
-
     }
 
     /*
@@ -319,7 +312,8 @@ public class KdTree {
         point2DQueue.enqueue(p1);
         Point2D p2 = new Point2D(0.4, 0.2);
         point2DQueue.enqueue(p2);
-        Point2D p3 = new Point2D(0.4, 0.5);
+        // Point2D p3 = new Point2D(0.4, 0.5);
+        Point2D p3 = new Point2D(0.4, 0.2);
         point2DQueue.enqueue(p3);
         Point2D p4 = new Point2D(0.3, 0.3);
         point2DQueue.enqueue(p4);
@@ -330,12 +324,15 @@ public class KdTree {
             kdtree.insert(p);
             kdtree.draw();
         }
-        Point2D query = new Point2D(0.43, 0.16);
-        query.draw();
+        System.out.println("Size of kdtree is: " + kdtree.size());
+        System.out.println(p2.equals(p3));
 
-        Point2D nearestNeighbor = kdtree.nearest(query);
-        nearestNeighbor.drawTo(query);
-        System.out.println(nearestNeighbor.toString());
+        // Point2D query = new Point2D(0.1, 0.7);
+        // query.draw();
+        //
+        // Point2D nearestNeighbor = kdtree.nearest(query);
+        // nearestNeighbor.drawTo(query);
+        // System.out.println(nearestNeighbor.toString());
 
     }
 }
