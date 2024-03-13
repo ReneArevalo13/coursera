@@ -143,8 +143,6 @@ public class KdTree {
 
     // draw all points to standard draw
     public void draw() {
-
-
         draw(root);
     }
 
@@ -198,9 +196,80 @@ public class KdTree {
     }
 
     // a nearest neighbor in the set to point p; null if the set is empty
-    // public Point2D nearest(Point2D p) {
-    //
-    // }
+    public Point2D nearest(Point2D p) {
+        if (p == null) throw new IllegalArgumentException("null point");
+        Point2D champ = new Point2D(2.0, 2.0);
+
+        return nearest(p, root, champ);
+
+    }
+
+    private Point2D nearest(Point2D p, Node head, Point2D champ) {
+        if (head == null) return champ;
+        Point2D currentPoint = head.point;
+
+        // the distance between query point the node's associated rectangle
+        double rectDistance = head.rect.distanceSquaredTo(p);
+        double queryDistance = champ.distanceSquaredTo(p);
+
+        if (rectDistance < queryDistance) {
+
+            double pointDistance = head.point.distanceSquaredTo(p);
+            if (pointDistance < queryDistance) {
+                champ = head.point;
+            }
+
+            // pretend inserting query point: p
+            // determining which subtree to go down next
+            int cmpValue = cmp(head, p, head.split);
+
+            // split vertically
+            if (head.split == true) {
+
+                if (cmpValue < 0) {
+                    // left subtree (LEFT OF VERTICAL SPLIT)
+                    champ = nearest(p, head.leftBranch, champ);
+                    champ = nearest(p, head.rightBranch, champ);
+
+                }
+                else if (cmpValue >= 0) {
+                    // right subtree (RIGHT OF VERTICAL SPLIT)
+                    champ = nearest(p, head.rightBranch, champ);
+                    champ = nearest(p, head.leftBranch, champ);
+                }
+            }
+            // split horizontally
+            if (head.split == false) {
+                if (cmpValue < 0) {
+                    // left subtree (BELOW HORIZONTAL SPLIT)
+                    champ = nearest(p, head.leftBranch, champ);
+                    champ = nearest(p, head.rightBranch, champ);
+                }
+                else if (cmpValue >= 0) {
+                    // right subtree (ABOVE HORIZONTAL SPLIT)
+                    champ = nearest(p, head.rightBranch, champ);
+                    champ = nearest(p, head.leftBranch, champ);
+                }
+            }
+        }
+        return champ;
+            /*
+             pruning rule: if the closest point discovered so far is closer than the distance between
+             the query point and the rectangle corresponding to a node, there is no need to explore
+             that node (or its subtrees). That is, search a node only if it might contain a point
+             that is closer than the best one found so far.
+
+             The effectiveness of the pruning rule depends on quickly finding a nearby point.
+             To do this, organize the recursive method so that when there are two possible subtrees
+             to go down, you always choose the subtree that is on the same side of the splitting
+             line as the query point as the first subtree to explore—the closest point found while
+             exploring the first subtree may enable pruning of the second subtree.
+
+             THIS MEANS THAT RECTDISTANCE < QUERYDISTANCE means we search the node and subtree
+             */
+
+
+    }
 
     /*
     Comparison method that will compare the x-coordinates if the split is vertical.
@@ -259,8 +328,15 @@ public class KdTree {
         KdTree kdtree = new KdTree();
         for (Point2D p : point2DQueue) {
             kdtree.insert(p);
-            // kdtree.draw();
+            kdtree.draw();
         }
+        Point2D query = new Point2D(0.43, 0.16);
+        query.draw();
+
+        Point2D nearestNeighbor = kdtree.nearest(query);
+        nearestNeighbor.drawTo(query);
+        System.out.println(nearestNeighbor.toString());
+
     }
 }
 
