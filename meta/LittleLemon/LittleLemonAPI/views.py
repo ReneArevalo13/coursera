@@ -1,7 +1,7 @@
 
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny, 
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from .models import *
 from .serializers import *
 from django.contrib.auth.models import User, Group
@@ -124,7 +124,7 @@ class CartView(generics.ListAPIView):
         return Response(status=204)
     
     
-class OrdersView(generics.ListAPIView):
+class OrdersView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
        
@@ -153,6 +153,7 @@ class OrdersView(generics.ListAPIView):
             print('going through items')
             print(order.data)
             print(item.menuitem.id)
+            
             orderitem_data = {
                 'order': order.data['id'],
                 'menuitem': item.menuitem,
@@ -161,6 +162,7 @@ class OrdersView(generics.ListAPIView):
                 'unit_price': item.unit_price,
                 'price': item.price
             }
+            
             print('have order item data')
             print(orderitem_data)
             orderitem_serialized = OrderItemSerializer(data=orderitem_data)
@@ -170,10 +172,10 @@ class OrdersView(generics.ListAPIView):
                 print('saving order item')
                 orderitem_serialized.save()
                 print('item saved')
-                cart.delete()
-                return Response(order.data, status=status.HTTP_201_CREATED)
+                
+        cart.delete()
+        return Response(order.data, status=status.HTTP_201_CREATED)
             
-        return Response(OrderItemSerializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     
     def delete(self, request):
@@ -187,21 +189,36 @@ class OrdersView(generics.ListAPIView):
             total += item.price
         return total
     
-    def get_permissions(self):
+    # def get_permissions(self):    
         
-        if self.request.method == 'GET' or 'POST' : 
-            permission_classes = [IsAuthenticated]
-        else:
-            permission_classes = [IsAuthenticated | IsAdminUser]
-        return[permission() for permission in permission_classes]
+    #     if self.request.method == 'GET' or 'POST' : 
+    #         permission_classes = [IsAuthenticated]
+    #     else:
+    #         permission_classes = [IsAuthenticated | IsAdminUser]
+    #     return[permission() for permission in permission_classes]
         
-    
-         
-    
-    # Creates a new order item for the current user. Gets current cart items from the cart endpoints and 
-    # adds those items to the order items table. Then deletes all items from the cart for this user.
-    
-    
 
-            
-     
+class SingleOrderView(generics.ListAPIView):
+    serializer_class = OrderItemSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        order_id = self.kwargs['pk']
+        query = OrderItem.objects.filter(order_id=order_id)
+        return query
+    
+    # changes delivery status 
+    def patch(self, *args, **kwargs):
+        order = Order.objects.get(pk=self.kwargs['pk'])
+        order.status = not order.status
+        order.save()
+        return Response(status=200)
+    
+    # set delivery crew
+    def put(self, request, *args, **kwargs):
+        order = Order.objects.get(pk=self.kwargs['pk'])
+        deliverycrew = request.data["delivery_crew"]
+        delivery_data = {"delivery_crew": deliverycrew}
+        serialized_item = OrderSerializer(order, data=delivery_data, partial=True)
+        serialized_item.is_valid(raise_exception=True)
+        serialized_item.save()
+        return Response(status=200)
