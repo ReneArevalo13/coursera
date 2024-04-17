@@ -199,12 +199,18 @@ class OrdersView(generics.ListCreateAPIView):
         
 
 class SingleOrderView(generics.ListAPIView):
-    serializer_class = OrderItemSerializer
+    # serializer_class = OrderItemSerializer
 
     def get_queryset(self, *args, **kwargs):
         order_id = self.kwargs['pk']
-        query = OrderItem.objects.filter(order_id=order_id)
+        query = OrderItem.objects.all()
         return query
+    
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return OrderItemSerializer
+        else:
+            return OrderSerializer
     
     # changes delivery status 
     def patch(self, *args, **kwargs):
@@ -216,9 +222,14 @@ class SingleOrderView(generics.ListAPIView):
     # set delivery crew
     def put(self, request, *args, **kwargs):
         order = Order.objects.get(pk=self.kwargs['pk'])
-        deliverycrew = request.data["delivery_crew"]
-        delivery_data = {"delivery_crew": deliverycrew}
-        serialized_item = OrderSerializer(order, data=delivery_data, partial=True)
-        serialized_item.is_valid(raise_exception=True)
-        serialized_item.save()
-        return Response(status=200)
+        print(order)
+        delivery_crew_data = {
+            'delivery_crew': self.request.data['delivery_crew']
+        }
+        serializer = OrderSerializer(order, data=delivery_crew_data, partial=True)
+        print(serializer)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)        
+    
