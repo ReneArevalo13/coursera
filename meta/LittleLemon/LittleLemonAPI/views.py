@@ -10,12 +10,14 @@ from django.http import HttpResponse
 from rest_framework.response import Response
 from decimal import Decimal
 from datetime import date
-
-
+from .permissions import IsManager, IsDeliveryCrew
+from rest_framework.throttling import UserRateThrottle
 
 # Create your views here.
 
 class MenuItemView(generics.ListAPIView,  generics.ListCreateAPIView):
+    throttle_classes = [UserRateThrottle]
+    
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
     def get_permissions(self):
@@ -24,6 +26,7 @@ class MenuItemView(generics.ListAPIView,  generics.ListCreateAPIView):
         return [AllowAny()]
 
 class SingleMenuItemView(generics.RetrieveUpdateDestroyAPIView):
+    throttle_classes = [UserRateThrottle]
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
     
@@ -91,6 +94,7 @@ class CartView(generics.ListAPIView):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
     
+    
     def get_queryset(self):
         user = self.request.user
         return Cart.objects.filter(user=user)
@@ -123,10 +127,11 @@ class CartView(generics.ListAPIView):
         Cart.objects.filter(user=user).delete()
         return Response(status=204)
     
-    
+
 class OrdersView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
        
     def get_queryset(self):
         user = self.request.user
@@ -174,10 +179,8 @@ class OrdersView(generics.ListCreateAPIView):
                 print('item saved')
                 
         cart.delete()
-        return Response(order.data, status=status.HTTP_201_CREATED)
+        return Response(order.data, status=201)
             
-    
-    
     def delete(self, request):
         user = self.request.user
         Order.objects.filter(user=user).delete()
@@ -189,28 +192,21 @@ class OrdersView(generics.ListCreateAPIView):
             total += item.price
         return total
     
-    # def get_permissions(self):    
+    def get_permissions(self):    
         
-    #     if self.request.method == 'GET' or 'POST' : 
-    #         permission_classes = [IsAuthenticated]
-    #     else:
-    #         permission_classes = [IsAuthenticated | IsAdminUser]
-    #     return[permission() for permission in permission_classes]
+        if self.request.method == 'GET' or 'POST' : 
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAuthenticated | IsAdminUser]
+        return[permission() for permission in permission_classes]
         
 
 class SingleOrderView(generics.ListAPIView):
     # serializer_class = OrderItemSerializer
+    throttle_classes = [UserRateThrottle]
 
     def get_queryset(self, *args, **kwargs):
-        order_id = self.kwargs['pk']
-        query = OrderItem.objects.all()
-        return query
-    
-    def get_serializer_class(self):
-        if self.request.method == "GET":
-            return OrderItemSerializer
-        else:
-            return OrderSerializer
+        return OrderItem.objects.filter(order_id=self.kwargs['pk'])
     
     # changes delivery status 
     def patch(self, *args, **kwargs):
@@ -222,7 +218,6 @@ class SingleOrderView(generics.ListAPIView):
     # set delivery crew
     def put(self, request, *args, **kwargs):
         order = Order.objects.get(pk=self.kwargs['pk'])
-        print(order)
         delivery_crew_data = {
             'delivery_crew': self.request.data['delivery_crew']
         }
@@ -232,4 +227,27 @@ class SingleOrderView(generics.ListAPIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)        
+    
+    def delete(self, request, *args, **kwargs):
+        order = Order.objects.get(pk=self.kwargs['pk'])
+        order.delete()
+        return Response(status=200)
+    
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return OrderItemSerializer
+        else:
+            return OrderSerializer
+    
+    def get_permissions(self):
+        order = Order.objects.get(pk=self.kwargs['pk'])
+        
+        if self.request.user == order.user and self.request.method == "GET":
+            permission_classes = [IsAuthenticated]
+        elif self.request.method == "PUT" or self.request.method == "DELETE":
+            permission_classes = [IsAuthenticated, IsManager | IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated, IsManager | IsDeliveryCrew | IsAdminUser ]    
+        return[permission() for permission in permission_classes]         
+
     
